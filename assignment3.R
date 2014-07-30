@@ -110,7 +110,6 @@ best <- function(state, outcome) {
 # manner (i.e. where one vector is used to break ties in another vector).
 
 # The function should use the following template.
-
 rankhospital <- function(state, outcome, num = "best") {
 ## Read outcome data
 	hospital.data = read.csv("outcome-of-care-measures.csv",
@@ -136,14 +135,14 @@ rankhospital <- function(state, outcome, num = "best") {
 	index = match(outcome, c("heart attack", "heart failure", "pneumonia"))
 	state.hosp.data = na.omit(subset(hospital.data, State == state))[,c(1:2, (2 + index))]
 	state.hosp.data = state.hosp.data[order(state.hosp.data$Hospital.Name),]
-	state.hosp.data$Rank = rank(state.hosp.data[,3], ties.method = "min")
+	state.hosp.data$Rank = rank(as.numeric(state.hosp.data[,3]), ties.method = "first")
 	if (num == "best") {
-		state.hosp.data$Hospital.Name[which.min(as.numeric(state.hosp.data[,3]))]
+			state.hosp.data$Hospital.Name[which.min(as.numeric(state.hosp.data[,3]))]
 		} else if (num == "worst") {
 			state.hosp.data$Hospital.Name[which.max(as.numeric(state.hosp.data[,3]))]
-			} else {
-				state.hosp.data$Hospital.Name[which(state.hosp.data$Rank == num)]
-			}
+		} else if (num >= min(state.hosp.data$Rank) & num <= max(state.hosp.data$Rank)) {
+			state.hosp.data$Hospital.Name[which(state.hosp.data$Rank == num)]
+		} else print("NA")
 }
 
 # The function should check the validity of its arguments. If an invalid state value is passed to best, the
@@ -156,8 +155,8 @@ rankhospital <- function(state, outcome, num = "best") {
 # > source("rankhospital.R")
 # > rankhospital("TX", "heart failure", 4)
 # [1] "DETAR HOSPITAL NAVARRO"
-# > rankhospital("MD", "heart attack", "worst")
+ rankhospital("MD", "heart attack", "worst")
 # [1] "HARFORD MEMORIAL HOSPITAL"
-# > rankhospital("MN", "heart attack", 5000)
+> rankhospital("MN", "heart attack", 5000)
 # [1] NA
 # Save your code for this function to a le named rankhospital.R.
