@@ -160,3 +160,115 @@ rankhospital <- function(state, outcome, num = "best") {
 > rankhospital("MN", "heart attack", 5000)
 # [1] NA
 # Save your code for this function to a le named rankhospital.R.
+
+############################################
+
+# 4 Ranking hospitals in all states
+
+# Write a function called rankall that takes two arguments: 
+
+# an outcome name (outcome)
+# a hospital ranking (num). 
+
+# The function reads the outcome-of-care-measures.csv le and returns a 2-column data frame
+# containing the hospital in each state that has the ranking specied in num. 
+
+# For example the function call rankall("heart attack", "best") would return a data frame containing the names of the hospitals
+# that are the best in their respective states for 30-day heart attack death rates. 
+
+# The function should return a value for every state (some may be NA).
+
+# The rst column in the data frame is named hospital, which containsthe hospital name, 
+
+# the second column is named state, which contains the 2-character abbreviation for the state name. 
+
+# Hospitals that do not have data on a particular outcome should be excluded from the set of hospitals when deciding the rankings.
+
+# Handling ties. The rankall function should handle ties in the 30-day mortality rates in the same way
+# that the rankhospital function handles ties.
+
+rankall <- function(outcome, num = "best") {
+## Read outcome data
+	hospital.data = read.csv("outcome-of-care-measures.csv",
+		header = TRUE,
+		colClasses = "character",
+		na.strings = "Not Available")
+	hospital.data = hospital.data[,c(2, 7, 11, 17, 23)]
+## Check outcome is valid
+	if (sum(outcome %in% c("heart attack", "heart failure", "pneumonia")) == 0) {
+		stop("invalid outcome")
+	}
+## For each state, find the hospital of the given rank
+## Return a data frame with the hospital names and the
+## (abbreviated) state name
+	index = match(outcome, c("heart attack", "heart failure", "pneumonia"))
+	hosp.data = hospital.data[,c(1:2, (2 + index))]
+	hosp.data = hosp.data[order(hosp.data$Hospital.Name),]
+	state = sort(unique(hosp.data$State))
+	data.l = list()
+	for (i in 1:length(state)) {
+		data.l[[i]] = subset(hosp.data, State == state[i])
+	}
+	ranking = function(x) {
+		Ranks = rank(as.numeric(x[,3]), na.last = "keep", ties.method = "first")
+		x = data.frame(x, Rank = Ranks)
+	}
+	data.l = lapply(data.l, ranking)
+	if (num == "best") {
+		num = 1
+		hospitals = unlist(lapply(data.l, function(x) {x$Hospital.Name[match(num, x$Rank)]}))
+		data.frame(hospital = hospitals, state = state)
+	} else if (num == "worst") {
+		hospitals = unlist(lapply(data.l, function(x) {x$Hospital.Name[match(max(x$Rank, na.rm = TRUE), x$Rank)]}))
+		data.frame(hospital = hospitals, state = state)
+	} else if (is.numeric(num) == TRUE & num < max(unlist(lapply(data.l, function(x) {max(x$Rank, na.rm = TRUE)})))) {
+		hospitals = unlist(lapply(data.l, function(x) {x$Hospital.Name[match(num, x$Rank)]}))
+		data.frame(hospital = hospitals, state = state)
+	} else print("NA")
+}
+
+# The strategy I took was to break hosp.data into a list, where each entry corresponds to a state, 
+# so I can act on each state individually. However, other strategies might also work; 
+# I was thinking this morning that maybe there is a way to do this with with(tapply())
+
+# The function should check the validity of its arguments. If an invalid outcome value is passed to rankall,
+# the function should throw an error via the stop function with the exact message \invalid outcome". 
+
+# The num
+# variable can take values \best", \worst", or an integer indicating the ranking (smaller numbers are better).
+# If the number given by num is larger than the number of hospitals in that state, then the function should
+# return NA.
+
+# Here is some sample output from the function.
+
+# > source("rankall.R")
+# > head(rankall("heart attack", 20), 10)
+# hospital state
+# AK <NA> AK
+# AL D W MCMILLAN MEMORIAL HOSPITAL AL
+# AR ARKANSAS METHODIST MEDICAL CENTER AR
+# AZ JOHN C LINCOLN DEER VALLEY HOSPITAL AZ
+# CA SHERMAN OAKS HOSPITAL CA
+# CO SKY RIDGE MEDICAL CENTER CO
+# CT MIDSTATE MEDICAL CENTER CT
+# DC <NA> DC
+# DE <NA> DE
+# FL SOUTH FLORIDA BAPTIST HOSPITAL FL
+# > tail(rankall("pneumonia", "worst"), 3)
+# hospital state
+# WI MAYO CLINIC HEALTH SYSTEM - NORTHLAND, INC WI
+# WV PLATEAU MEDICAL CENTER WV
+# WY NORTH BIG HORN HOSPITAL DISTRICT WY
+# > tail(rankall("heart failure"), 10)
+# hospital state
+# TN WELLMONT HAWKINS COUNTY MEMORIAL HOSPITAL TN
+# TX FORT DUNCAN MEDICAL CENTER TX
+# UT VA SALT LAKE CITY HEALTHCARE - GEORGE E. WAHLEN VA MEDICAL CENTER UT
+# VA SENTARA POTOMAC HOSPITAL VA
+# VI GOV JUAN F LUIS HOSPITAL & MEDICAL CTR VI
+# VT SPRINGFIELD HOSPITAL VT
+# WA HARBORVIEW MEDICAL CENTER WA
+# WI AURORA ST LUKES MEDICAL CENTER WI
+# WV FAIRMONT GENERAL HOSPITAL WV
+# WY CHEYENNE VA MEDICAL CENTER WY
+# Save your code for this function to a le named rankall.R.
